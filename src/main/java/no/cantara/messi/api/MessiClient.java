@@ -1,6 +1,7 @@
 package no.cantara.messi.api;
 
 import de.huxhorn.sulky.ulid.ULID;
+import no.cantara.messi.protos.MessiMessage;
 
 import java.time.Duration;
 
@@ -93,15 +94,15 @@ public interface MessiClient extends AutoCloseable {
      * Create a new consumer on the given topic, starting at the given initial position (or at the beginning of the topic
      * if the given initial position is null).
      *
-     * @param topic           the name of the topic to consume message from. Must be the context-specific short-name of
-     *                        the topic that is independent of any technology or implementation specific schemes which
-     *                        should be configured when loading the client provider.
+     * @param topic             the name of the topic to consume message from. Must be the context-specific short-name of
+     *                          the topic that is independent of any technology or implementation specific schemes which
+     *                          should be configured when loading the client provider.
      * @param initialExternalId the position to be set as current position when creating the consumer
-     * @param inclusive       whether or not to include the message at the initial-position when reading the stream
-     * @param approxTimestamp timestamp in milliseconds since 1/1-1970. This is an approximation of when the
-     *                        initialExternalId was originally written to the stream.
-     * @param tolerance       tolerance duration. Position can be scanned within the range [approxTimestamp - tolerance,
-     *                        approxTimestamp + tolerance)
+     * @param inclusive         whether or not to include the message at the initial-position when reading the stream
+     * @param approxTimestamp   timestamp in milliseconds since 1/1-1970. This is an approximation of when the
+     *                          initialExternalId was originally written to the stream.
+     * @param tolerance         tolerance duration. Position can be scanned within the range [approxTimestamp - tolerance,
+     *                          approxTimestamp + tolerance)
      * @return a consumer that can be used to read the topic stream.
      */
     default MessiConsumer consumer(String topic, String initialExternalId, boolean inclusive, long approxTimestamp, Duration tolerance) {
@@ -123,7 +124,7 @@ public interface MessiClient extends AutoCloseable {
      * position will be searched within the range as defined by approxTimestamp and tolerance.
      *
      * @param topic           the topic
-     * @param externalId        the position to find
+     * @param externalId      the position to find
      * @param inclusive       whether the starting point should be included when iterating from the returned cursor
      * @param approxTimestamp timestamp in milliseconds since 1/1-1970. This is an approximation of when the
      *                        initialPosition was originally written to the stream.

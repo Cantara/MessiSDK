@@ -5,7 +5,7 @@ import no.cantara.messi.api.MessiClient;
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
 import no.cantara.messi.api.MessiCursor;
-import no.cantara.messi.api.MessiMessage;
+import no.cantara.messi.protos.MessiMessage;
 
 import java.time.Duration;
 

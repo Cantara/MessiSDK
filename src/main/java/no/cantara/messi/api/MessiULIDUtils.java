@@ -1,12 +1,24 @@
 package no.cantara.messi.api;
 
 import de.huxhorn.sulky.ulid.ULID;
+import no.cantara.messi.protos.MessiUlid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MessiULIDUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(MessiULIDUtils.class);
+
+    public static ULID.Value toUlid(MessiUlid messiUlid) {
+        return new ULID.Value(messiUlid.getMsb(), messiUlid.getLsb());
+    }
+
+    public static MessiUlid toMessiUlid(ULID.Value ulid) {
+        return MessiUlid.newBuilder()
+                .setMsb(ulid.getMostSignificantBits())
+                .setLsb(ulid.getLeastSignificantBits())
+                .build();
+    }
 
     /**
      * Return the ULID.Value that represents beginning of a given timestamp.

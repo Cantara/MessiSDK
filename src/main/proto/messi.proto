@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "no.cantara.messi.protos";
+
+message MessiUlid {
+  int64 msb = 1;
+  int64 lsb = 2;
+}
+
+message MessiSource {
+  string clientSourceId = 1;
+}
+
+message MessiProvider {
+  optional uint64 publishedTimestamp = 1;
+  optional string shardId = 2;
+  optional string sequenceNumber = 3;
+}
+
+message MessiOrdering {
+  string group = 1;
+  int64 sequenceNumber = 2;
+}
+
+message MessiMessage {
+  MessiUlid ulid = 1;
+  string externalId = 2;
+
+  optional string partitionKey = 3;
+
+  map<string, string> attributes = 4;
+  map<string, bytes> data = 5;
+
+  optional MessiSource source = 6;
+  optional MessiProvider provider = 7;
+  optional MessiOrdering ordering = 8;
+}

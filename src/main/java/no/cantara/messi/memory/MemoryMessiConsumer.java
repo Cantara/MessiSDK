@@ -2,8 +2,8 @@ package no.cantara.messi.memory;
 
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
-import no.cantara.messi.api.MessiMessage;
 import no.cantara.messi.api.MessiULIDUtils;
+import no.cantara.messi.protos.MessiMessage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +48,7 @@ class MemoryMessiConsumer implements MessiConsumer {
                 topic.awaitProduction(durationNano, TimeUnit.NANOSECONDS);
             }
             MessiMessage message = topic.readNext(position.get());
-            position.set(new MemoryMessiCursor(message.ulid(), false, true));
+            position.set(new MemoryMessiCursor(MessiULIDUtils.toUlid(message.getUlid()), false, true));
             return message;
         } finally {
             topic.unlock();

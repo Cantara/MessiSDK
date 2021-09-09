@@ -1,5 +1,7 @@
 package no.cantara.messi.api;
 
+import no.cantara.messi.protos.MessiMessage;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +23,7 @@ public interface MessiConsumer extends AutoCloseable {
      * @param unit    the unit of the timeout, e.g. TimeUnit.SECONDS
      * @return the next available message before the timeout occurs, or null if no next message is available before the
      * timeout.
-     * @throws InterruptedException   if the calling thread is interrupted while waiting on an available message.
+     * @throws InterruptedException if the calling thread is interrupted while waiting on an available message.
      * @throws MessiClosedException if method is called after this instance has been closed.
      */
     MessiMessage receive(int timeout, TimeUnit unit) throws InterruptedException, MessiClosedException;

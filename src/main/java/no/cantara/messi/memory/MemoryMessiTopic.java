@@ -1,7 +1,8 @@
 package no.cantara.messi.memory;
 
 import de.huxhorn.sulky.ulid.ULID;
-import no.cantara.messi.api.MessiMessage;
+import no.cantara.messi.protos.MessiMessage;
+import no.cantara.messi.protos.MessiUlid;
 
 import java.util.Map;
 import java.util.NavigableMap;
@@ -9,7 +10,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -40,24 +40,12 @@ class MemoryMessiTopic {
 
     void write(ULID.Value ulid, MessiMessage message) {
         checkHasLock();
-        MessiMessage copy = copy(ulid, message); // fake serialization and deserialization
-        data.put(copy.ulid(), copy);
-        signalProduction();
-    }
-
-    private MessiMessage copy(ULID.Value ulid, MessiMessage original) {
-        return original.copy()
-                .ulid(ulid)
-                .data(original.keys().stream().collect(Collectors.toMap(
-                                k -> k, k -> {
-                                    byte[] src = original.get(k);
-                                    byte[] dest = new byte[src.length];
-                                    System.arraycopy(src, 0, dest, 0, src.length);
-                                    return src;
-                                }
-                        ))
-                )
+        // fake serialization and deserialization
+        MessiMessage copy = MessiMessage.newBuilder(message)
+                .setUlid(MessiUlid.newBuilder().setMsb(ulid.getMostSignificantBits()).setLsb(ulid.getLeastSignificantBits()).build())
                 .build();
+        data.put(ulid, copy);
+        signalProduction();
     }
 
     boolean hasNext(MemoryMessiCursor cursor) {
@@ -125,7 +113,7 @@ class MemoryMessiTopic {
          */
 
         for (Map.Entry<ULID.Value, MessiMessage> entry : data.subMap(lowerBound, true, upperBound, false).entrySet()) {
-            if (externalId.equals(entry.getValue().externalId())) {
+            if (externalId.equals(entry.getValue().getExternalId())) {
                 return entry.getKey();
             }
         }

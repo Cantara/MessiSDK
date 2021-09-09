@@ -2,7 +2,7 @@ package no.cantara.messi.discard;
 
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
-import no.cantara.messi.api.MessiMessage;
+import no.cantara.messi.protos.MessiMessage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;

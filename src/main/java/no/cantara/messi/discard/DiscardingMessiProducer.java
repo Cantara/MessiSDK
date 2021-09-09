@@ -1,7 +1,7 @@
 package no.cantara.messi.discard;
 
-import no.cantara.messi.api.MessiMessage;
 import no.cantara.messi.api.MessiProducer;
+import no.cantara.messi.protos.MessiMessage;
 
 import java.util.concurrent.CompletableFuture;
 

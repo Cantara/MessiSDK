@@ -1,5 +1,7 @@
 package no.cantara.messi.api;
 
+import no.cantara.messi.protos.MessiMessage;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
