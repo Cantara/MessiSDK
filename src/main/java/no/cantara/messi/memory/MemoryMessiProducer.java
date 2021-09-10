@@ -3,20 +3,16 @@ package no.cantara.messi.memory;
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiProducer;
-import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 class MemoryMessiProducer implements MessiProducer {
 
     final ULID ulid = new ULID();
-
-    final AtomicReference<ULID.Value> prevUlid = new AtomicReference<>(ulid.nextValue());
 
     final MemoryMessiTopic topic;
 
@@ -42,14 +38,7 @@ class MemoryMessiProducer implements MessiProducer {
                 if (message == null) {
                     throw new NullPointerException("on of the messages was null");
                 }
-                ULID.Value ulid;
-                if (message.hasUlid()) {
-                    ulid = new ULID.Value(message.getUlid().getMsb(), message.getUlid().getLsb());
-                } else {
-                    ulid = MessiULIDUtils.nextMonotonicUlid(this.ulid, prevUlid.get());
-                }
-                prevUlid.set(ulid);
-                topic.write(ulid, message);
+                topic.write(message);
             }
         } finally {
             topic.unlock();

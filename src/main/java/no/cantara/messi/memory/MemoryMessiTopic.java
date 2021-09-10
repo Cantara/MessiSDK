@@ -1,6 +1,7 @@
 package no.cantara.messi.memory;
 
 import de.huxhorn.sulky.ulid.ULID;
+import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
 import no.cantara.messi.protos.MessiUlid;
 
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -19,6 +21,9 @@ class MemoryMessiTopic {
     final NavigableMap<ULID.Value, MessiMessage> data = new ConcurrentSkipListMap<>(); // protected by lock
     final ReentrantLock lock = new ReentrantLock();
     final Condition condition = lock.newCondition();
+    final ULID ulid = new ULID();
+    final AtomicReference<ULID.Value> prevUlid = new AtomicReference<>(ulid.nextValue());
+
 
     MemoryMessiTopic(String topic) {
         this.topic = topic;
@@ -38,13 +43,24 @@ class MemoryMessiTopic {
         }
     }
 
-    void write(ULID.Value ulid, MessiMessage message) {
+    void write(MessiMessage message) {
         checkHasLock();
+
+        ULID.Value ulid;
+        if (message.hasUlid()) {
+            ulid = new ULID.Value(message.getUlid().getMsb(), message.getUlid().getLsb());
+        } else {
+            ulid = MessiULIDUtils.nextMonotonicUlid(this.ulid, prevUlid.get());
+        }
+        prevUlid.set(ulid);
+
         // fake serialization and deserialization
         MessiMessage copy = MessiMessage.newBuilder(message)
                 .setUlid(MessiUlid.newBuilder().setMsb(ulid.getMostSignificantBits()).setLsb(ulid.getLeastSignificantBits()).build())
                 .build();
+
         data.put(ulid, copy);
+
         signalProduction();
     }
 

@@ -42,7 +42,7 @@ public class MessiClientTck {
     }
 
     @AfterMethod
-    public void closeMessiClient() throws Exception {
+    public void closeMessiClient() {
         client.close();
     }
 
@@ -51,20 +51,38 @@ public class MessiClientTck {
         assertNull(client.lastMessage("the-topic"));
     }
 
-    @Test
-    public void thatLastPositionOfProducerCanBeRead() {
-        MessiProducer producer = client.producer("the-topic");
-
-        producer.publish(
-                MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build()
-        );
+    @Test(invocationCount = 100)
+    public void thatLastPositionOfProducerCanBeRead() throws InterruptedException {
+        try (MessiProducer producer = client.producer("the-topic")) {
+            producer.publish(
+                    MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
+                    MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build()
+            );
+        }
 
         assertEquals(client.lastMessage("the-topic").getExternalId(), "b");
 
-        producer.publish(MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build());
+        try (MessiProducer producer = client.producer("the-topic")) {
+            producer.publish(MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build());
+        }
 
-        assertEquals(client.lastMessage("the-topic").getExternalId(), "c");
+        String externalId = client.lastMessage("the-topic").getExternalId();
+        if (externalId.equals("b")) {
+            try (MessiConsumer consumer = client.consumer("the-topic")) {
+                MessiMessage msg1 = consumer.receive(1, TimeUnit.SECONDS);
+                ULID.Value ulid1 = MessiULIDUtils.toUlid(msg1.getUlid());
+                System.out.printf("%s=%s%n", msg1.getExternalId(), ulid1);
+                MessiMessage msg2 = consumer.receive(1, TimeUnit.SECONDS);
+                ULID.Value ulid2 = MessiULIDUtils.toUlid(msg2.getUlid());
+                System.out.printf("%s=%s%n", msg2.getExternalId(), ulid2);
+                MessiMessage msg3 = consumer.receive(1, TimeUnit.SECONDS);
+                ULID.Value ulid3 = MessiULIDUtils.toUlid(msg3.getUlid());
+                System.out.printf("%s=%s%n", msg3.getExternalId(), ulid3);
+                MessiMessage msg4 = consumer.receive(1, TimeUnit.MILLISECONDS);
+                assertNull(msg4);
+            }
+        }
+        assertEquals(externalId, "c");
     }
 
     @Test
@@ -158,67 +176,75 @@ public class MessiClientTck {
 
     @Test
     public void thatSingleMessageCanBeProducedAndConsumerSynchronously() throws InterruptedException {
-        MessiProducer producer = client.producer("the-topic");
-        MessiConsumer consumer = client.consumer("the-topic");
+        try (MessiConsumer consumer = client.consumer("the-topic")) {
 
-        producer.publish(MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build());
+            try (MessiProducer producer = client.producer("the-topic")) {
+                producer.publish(MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build());
+            }
 
-        MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
-        assertEquals(message.getExternalId(), "a");
-        assertEquals(message.getDataCount(), 2);
+            MessiMessage message = consumer.receive(5, TimeUnit.SECONDS);
+            assertEquals(message.getExternalId(), "a");
+            assertEquals(message.getDataCount(), 2);
+        }
     }
 
     @Test
     public void thatSingleMessageCanBeProducedAndConsumerAsynchronously() {
-        MessiProducer producer = client.producer("the-topic");
-        MessiConsumer consumer = client.consumer("the-topic");
+        try (MessiConsumer consumer = client.consumer("the-topic")) {
 
-        CompletableFuture<? extends MessiMessage> future = consumer.receiveAsync();
+            CompletableFuture<? extends MessiMessage> future = consumer.receiveAsync();
 
-        producer.publish(MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build());
+            try (MessiProducer producer = client.producer("the-topic")) {
+                producer.publish(MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build());
+            }
 
-        MessiMessage message = future.join();
-        assertEquals(message.getExternalId(), "a");
-        assertEquals(message.getDataCount(), 2);
+            MessiMessage message = future.join();
+            assertEquals(message.getExternalId(), "a");
+            assertEquals(message.getDataCount(), 2);
+        }
     }
 
     @Test
     public void thatMultipleMessagesCanBeProducedAndConsumerSynchronously() throws InterruptedException {
-        MessiProducer producer = client.producer("the-topic");
-        MessiConsumer consumer = client.consumer("the-topic");
+        try (MessiConsumer consumer = client.consumer("the-topic")) {
 
-        producer.publish(
-                MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
-                MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
-        );
+            try (MessiProducer producer = client.producer("the-topic")) {
+                producer.publish(
+                        MessiMessage.newBuilder().setUlid(MessiULIDUtils.toMessiUlid(new ULID().nextValue())).setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
+                        MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
+                        MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
+                );
+            }
 
-        MessiMessage message1 = consumer.receive(1, TimeUnit.SECONDS);
-        MessiMessage message2 = consumer.receive(1, TimeUnit.SECONDS);
-        MessiMessage message3 = consumer.receive(1, TimeUnit.SECONDS);
-        assertEquals(message1.getExternalId(), "a");
-        assertEquals(message2.getExternalId(), "b");
-        assertEquals(message3.getExternalId(), "c");
+            MessiMessage message1 = consumer.receive(5, TimeUnit.SECONDS);
+            MessiMessage message2 = consumer.receive(1, TimeUnit.SECONDS);
+            MessiMessage message3 = consumer.receive(1, TimeUnit.SECONDS);
+            assertEquals(message1.getExternalId(), "a");
+            assertEquals(message2.getExternalId(), "b");
+            assertEquals(message3.getExternalId(), "c");
+        }
     }
 
     @Test
     public void thatMultipleMessagesCanBeProducedAndConsumerAsynchronously() {
-        MessiProducer producer = client.producer("the-topic");
-        MessiConsumer consumer = client.consumer("the-topic");
+        try (MessiConsumer consumer = client.consumer("the-topic")) {
 
-        CompletableFuture<List<MessiMessage>> future = receiveAsyncAddMessageAndRepeatRecursive(consumer, "c", new ArrayList<>());
+            CompletableFuture<List<MessiMessage>> future = receiveAsyncAddMessageAndRepeatRecursive(consumer, "c", new ArrayList<>());
 
-        producer.publish(
-                MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
-                MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
-        );
+            try (MessiProducer producer = client.producer("the-topic")) {
+                producer.publish(
+                        MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
+                        MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
+                        MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
+                );
+            }
 
-        List<MessiMessage> messages = future.join();
+            List<MessiMessage> messages = future.join();
 
-        assertEquals(messages.get(0).getExternalId(), "a");
-        assertEquals(messages.get(1).getExternalId(), "b");
-        assertEquals(messages.get(2).getExternalId(), "c");
+            assertEquals(messages.get(0).getExternalId(), "a");
+            assertEquals(messages.get(1).getExternalId(), "b");
+            assertEquals(messages.get(2).getExternalId(), "c");
+        }
     }
 
     private CompletableFuture<List<MessiMessage>> receiveAsyncAddMessageAndRepeatRecursive(MessiConsumer consumer, String endExternalId, List<MessiMessage> messages) {
@@ -233,28 +259,30 @@ public class MessiClientTck {
 
     @Test
     public void thatMessagesCanBeConsumedByMultipleConsumers() {
-        MessiProducer producer = client.producer("the-topic");
-        MessiConsumer consumer1 = client.consumer("the-topic");
-        MessiConsumer consumer2 = client.consumer("the-topic");
+        try (MessiConsumer consumer1 = client.consumer("the-topic");
+             MessiConsumer consumer2 = client.consumer("the-topic")) {
 
-        CompletableFuture<List<MessiMessage>> future1 = receiveAsyncAddMessageAndRepeatRecursive(consumer1, "c", new ArrayList<>());
-        CompletableFuture<List<MessiMessage>> future2 = receiveAsyncAddMessageAndRepeatRecursive(consumer2, "c", new ArrayList<>());
+            CompletableFuture<List<MessiMessage>> future1 = receiveAsyncAddMessageAndRepeatRecursive(consumer1, "c", new ArrayList<>());
+            CompletableFuture<List<MessiMessage>> future2 = receiveAsyncAddMessageAndRepeatRecursive(consumer2, "c", new ArrayList<>());
 
-        producer.publish(
-                MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
-                MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
-        );
+            try (MessiProducer producer = client.producer("the-topic")) {
+                producer.publish(
+                        MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
+                        MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
+                        MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
+                );
+            }
 
-        List<MessiMessage> messages1 = future1.join();
-        assertEquals(messages1.get(0).getExternalId(), "a");
-        assertEquals(messages1.get(1).getExternalId(), "b");
-        assertEquals(messages1.get(2).getExternalId(), "c");
+            List<MessiMessage> messages1 = future1.join();
+            assertEquals(messages1.get(0).getExternalId(), "a");
+            assertEquals(messages1.get(1).getExternalId(), "b");
+            assertEquals(messages1.get(2).getExternalId(), "c");
 
-        List<MessiMessage> messages2 = future2.join();
-        assertEquals(messages2.get(0).getExternalId(), "a");
-        assertEquals(messages2.get(1).getExternalId(), "b");
-        assertEquals(messages2.get(2).getExternalId(), "c");
+            List<MessiMessage> messages2 = future2.join();
+            assertEquals(messages2.get(0).getExternalId(), "a");
+            assertEquals(messages2.get(1).getExternalId(), "b");
+            assertEquals(messages2.get(2).getExternalId(), "c");
+        }
     }
 
     @Test
