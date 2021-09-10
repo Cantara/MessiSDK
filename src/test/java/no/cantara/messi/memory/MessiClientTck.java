@@ -51,7 +51,7 @@ public class MessiClientTck {
         assertNull(client.lastMessage("the-topic"));
     }
 
-    @Test(invocationCount = 100)
+    @Test
     public void thatLastPositionOfProducerCanBeRead() throws InterruptedException {
         try (MessiProducer producer = client.producer("the-topic")) {
             producer.publish(
@@ -66,23 +66,7 @@ public class MessiClientTck {
             producer.publish(MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build());
         }
 
-        String externalId = client.lastMessage("the-topic").getExternalId();
-        if (externalId.equals("b")) {
-            try (MessiConsumer consumer = client.consumer("the-topic")) {
-                MessiMessage msg1 = consumer.receive(1, TimeUnit.SECONDS);
-                ULID.Value ulid1 = MessiULIDUtils.toUlid(msg1.getUlid());
-                System.out.printf("%s=%s%n", msg1.getExternalId(), ulid1);
-                MessiMessage msg2 = consumer.receive(1, TimeUnit.SECONDS);
-                ULID.Value ulid2 = MessiULIDUtils.toUlid(msg2.getUlid());
-                System.out.printf("%s=%s%n", msg2.getExternalId(), ulid2);
-                MessiMessage msg3 = consumer.receive(1, TimeUnit.SECONDS);
-                ULID.Value ulid3 = MessiULIDUtils.toUlid(msg3.getUlid());
-                System.out.printf("%s=%s%n", msg3.getExternalId(), ulid3);
-                MessiMessage msg4 = consumer.receive(1, TimeUnit.MILLISECONDS);
-                assertNull(msg4);
-            }
-        }
-        assertEquals(externalId, "c");
+        assertEquals(client.lastMessage("the-topic").getExternalId(), "c");
     }
 
     @Test
