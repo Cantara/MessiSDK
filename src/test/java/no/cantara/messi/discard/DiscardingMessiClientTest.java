@@ -15,11 +15,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 public class DiscardingMessiClientTest {
@@ -40,8 +40,7 @@ public class DiscardingMessiClientTest {
     @Test
     public void thatClientMethodsReturnEmpty() throws Exception {
         assertNull(client.lastMessage("the-topic"));
-        assertNull(client.cursorOf("the-topic", null, true));
-        assertNull(client.cursorOf("the-topic", "p1", true, 0, Duration.ZERO));
+        assertNotNull(client.cursorOf().build());
         assertFalse(client.isClosed());
     }
 

@@ -1,6 +1,5 @@
 package no.cantara.messi.memory;
 
-import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiProducer;
 import no.cantara.messi.protos.MessiMessage;
@@ -11,8 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 class MemoryMessiProducer implements MessiProducer {
-
-    final ULID ulid = new ULID();
 
     final MemoryMessiTopic topic;
 

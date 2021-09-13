@@ -8,7 +8,6 @@ import no.cantara.messi.api.MessiClient;
 import no.cantara.messi.api.MessiClientFactory;
 import no.cantara.messi.api.MessiConsumer;
 import no.cantara.messi.api.MessiMetadataClient;
-import no.cantara.messi.api.MessiNoSuchExternalIdException;
 import no.cantara.messi.api.MessiProducer;
 import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
@@ -22,6 +21,7 @@ import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -116,7 +116,7 @@ public class MessiClientTck {
             );
         }
 
-        try (MessiConsumer consumer = client.consumer("the-topic", ulid, true)) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf().ulid(ulid).inclusive(true).build())) {
             {
                 MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
                 assertEquals(MessiULIDUtils.toUlid(message.getUlid()), ulid);
@@ -295,7 +295,9 @@ public class MessiClientTck {
                     MessiMessage.newBuilder().setExternalId("d").putData("payload1", ByteString.copyFrom(new byte[8])).putData("payload2", ByteString.copyFrom(new byte[8])).build()
             );
         }
-        try (MessiConsumer consumer = client.consumer("the-topic", "a", System.currentTimeMillis(), Duration.ofMinutes(1))) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf()
+                .externalId("a", Instant.now(), Duration.ofMinutes(1))
+                .build())) {
             MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
             assertEquals(message.getExternalId(), "b");
         }
@@ -311,11 +313,16 @@ public class MessiClientTck {
                     MessiMessage.newBuilder().setExternalId("d").putData("payload1", ByteString.copyFrom(new byte[8])).putData("payload2", ByteString.copyFrom(new byte[8])).build()
             );
         }
-        try (MessiConsumer consumer = client.consumer("the-topic", "b", System.currentTimeMillis(), Duration.ofMinutes(1))) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf()
+                .externalId("b", Instant.now(), Duration.ofMinutes(1))
+                .build())) {
             MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
             assertEquals(message.getExternalId(), "c");
         }
-        try (MessiConsumer consumer = client.consumer("the-topic", "c", true, System.currentTimeMillis(), Duration.ofMinutes(1))) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf()
+                .externalId("c", Instant.now(), Duration.ofMinutes(1))
+                .inclusive(true)
+                .build())) {
             MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
             assertEquals(message.getExternalId(), "c");
         }
@@ -331,7 +338,9 @@ public class MessiClientTck {
                     MessiMessage.newBuilder().setExternalId("d").putData("payload1", ByteString.copyFrom(new byte[8])).putData("payload2", ByteString.copyFrom(new byte[8])).build()
             );
         }
-        try (MessiConsumer consumer = client.consumer("the-topic", "c", System.currentTimeMillis(), Duration.ofMinutes(1))) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf()
+                .externalId("c", Instant.now(), Duration.ofMinutes(1))
+                .build())) {
             MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
             assertEquals(message.getExternalId(), "d");
         }
@@ -347,7 +356,9 @@ public class MessiClientTck {
                     MessiMessage.newBuilder().setExternalId("d").putData("payload1", ByteString.copyFrom(new byte[8])).putData("payload2", ByteString.copyFrom(new byte[8])).build()
             );
         }
-        try (MessiConsumer consumer = client.consumer("the-topic", "d", System.currentTimeMillis(), Duration.ofMinutes(1))) {
+        try (MessiConsumer consumer = client.consumer("the-topic", client.cursorOf()
+                .externalId("d", Instant.now(), Duration.ofMinutes(1))
+                .build())) {
             MessiMessage message = consumer.receive(100, TimeUnit.MILLISECONDS);
             assertNull(message);
         }
@@ -387,39 +398,6 @@ public class MessiClientTck {
             consumer.seek(timestampBeforeA);
             assertEquals(consumer.receive(100, TimeUnit.MILLISECONDS).getExternalId(), "a");
         }
-    }
-
-    @Test
-    public void thatCursorOfValidExternalIdIsFound() throws Exception {
-        try (MessiProducer producer = client.producer("the-topic")) {
-            producer.publish(
-                    MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                    MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
-                    MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
-            );
-        }
-        assertNotNull(client.cursorOf("the-topic", "a", true, System.currentTimeMillis(), Duration.ofMinutes(1)));
-        assertNotNull(client.cursorOf("the-topic", "b", true, System.currentTimeMillis(), Duration.ofMinutes(1)));
-        assertNotNull(client.cursorOf("the-topic", "c", true, System.currentTimeMillis(), Duration.ofMinutes(1)));
-    }
-
-    @Test(expectedExceptions = MessiNoSuchExternalIdException.class)
-    public void thatCursorOfInvalidExternalIdIsNotFound() throws Exception {
-        try (MessiProducer producer = client.producer("the-topic")) {
-            producer.publish(
-                    MessiMessage.newBuilder().setExternalId("a").putData("payload1", ByteString.copyFrom(new byte[5])).putData("payload2", ByteString.copyFrom(new byte[5])).build(),
-                    MessiMessage.newBuilder().setExternalId("b").putData("payload1", ByteString.copyFrom(new byte[3])).putData("payload2", ByteString.copyFrom(new byte[3])).build(),
-                    MessiMessage.newBuilder().setExternalId("c").putData("payload1", ByteString.copyFrom(new byte[7])).putData("payload2", ByteString.copyFrom(new byte[7])).build()
-            );
-        }
-        assertNull(client.cursorOf("the-topic", "d", true, System.currentTimeMillis(), Duration.ofMinutes(1)));
-    }
-
-    @Test(expectedExceptions = MessiNoSuchExternalIdException.class)
-    public void thatCursorOfEmptyTopicIsNotFound() throws Exception {
-        try (MessiProducer producer = client.producer("the-topic")) {
-        }
-        client.cursorOf("the-topic", "d", true, System.currentTimeMillis(), Duration.ofMinutes(1));
     }
 
     @Test

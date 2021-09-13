@@ -3,6 +3,7 @@ package no.cantara.messi.memory;
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
+import no.cantara.messi.protos.MessiProvider;
 import no.cantara.messi.protos.MessiUlid;
 
 import java.util.Map;
@@ -57,6 +58,11 @@ class MemoryMessiTopic {
         // fake serialization and deserialization
         MessiMessage copy = MessiMessage.newBuilder(message)
                 .setUlid(MessiUlid.newBuilder().setMsb(ulid.getMostSignificantBits()).setLsb(ulid.getLeastSignificantBits()).build())
+                .setProvider(MessiProvider.newBuilder()
+                        .setShardId("the-only-shard")
+                        .setPublishedTimestamp(System.currentTimeMillis())
+                        .setSequenceNumber(ulid.toString())
+                        .build())
                 .build();
 
         data.put(ulid, copy);
@@ -66,25 +72,25 @@ class MemoryMessiTopic {
 
     boolean hasNext(MemoryMessiCursor cursor) {
         checkHasLock();
-        if (cursor.startKey == null) {
+        if (cursor.ulid == null) {
             return !data.isEmpty();
         }
         if (cursor.inclusive) {
-            return data.ceilingEntry(cursor.startKey) != null;
+            return data.ceilingEntry(cursor.ulid) != null;
         } else {
-            return data.higherKey(cursor.startKey) != null;
+            return data.higherKey(cursor.ulid) != null;
         }
     }
 
     MessiMessage readNext(MemoryMessiCursor cursor) {
         checkHasLock();
-        if (cursor.startKey == null) {
+        if (cursor.ulid == null) {
             return data.firstEntry().getValue();
         }
         if (cursor.inclusive) {
-            return ofNullable(data.ceilingEntry(cursor.startKey)).map(Map.Entry::getValue).orElse(null);
+            return ofNullable(data.ceilingEntry(cursor.ulid)).map(Map.Entry::getValue).orElse(null);
         } else {
-            return ofNullable(data.higherEntry(cursor.startKey)).map(Map.Entry::getValue).orElse(null);
+            return ofNullable(data.higherEntry(cursor.ulid)).map(Map.Entry::getValue).orElse(null);
         }
     }
 

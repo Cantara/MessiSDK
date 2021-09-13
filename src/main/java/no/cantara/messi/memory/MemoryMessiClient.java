@@ -1,23 +1,17 @@
 package no.cantara.messi.memory;
 
-import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiClient;
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
 import no.cantara.messi.api.MessiCursor;
-import no.cantara.messi.api.MessiNoSuchExternalIdException;
-import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static java.util.Optional.ofNullable;
 
 public class MemoryMessiClient implements MessiClient {
 
@@ -51,27 +45,12 @@ public class MemoryMessiClient implements MessiClient {
     }
 
     @Override
-    public MessiCursor cursorOf(String topicName, ULID.Value ulid, boolean inclusive) {
-        return new MemoryMessiCursor(ulid, inclusive, true);
+    public MemoryMessiCursor.Builder cursorOf() {
+        return new MemoryMessiCursor.Builder();
     }
 
     @Override
-    public MessiCursor cursorOf(String topicName, String externalId, boolean inclusive, long approxTimestamp, Duration tolerance) {
-        MemoryMessiTopic topic = topicByName.computeIfAbsent(topicName, MemoryMessiTopic::new);
-        topic.tryLock(5, TimeUnit.SECONDS);
-        try {
-            ULID.Value lowerBound = MessiULIDUtils.beginningOf(approxTimestamp - tolerance.toMillis());
-            ULID.Value upperBound = MessiULIDUtils.beginningOf(approxTimestamp + tolerance.toMillis());
-            return ofNullable(topic.ulidOf(externalId, lowerBound, upperBound))
-                    .map(ulid -> new MemoryMessiCursor(ulid, inclusive, true))
-                    .orElseThrow(() -> new MessiNoSuchExternalIdException(String.format("Position not found: %s", externalId)));
-        } finally {
-            topic.unlock();
-        }
-    }
-
-    @Override
-    public MessiMessage lastMessage(String topicName) throws MessiClosedException {
+    public MessiMessage lastMessage(String topicName, String shardId) throws MessiClosedException {
         if (isClosed()) {
             throw new MessiClosedException();
         }
