@@ -55,9 +55,10 @@ public interface MessiClient extends AutoCloseable {
      * this method indicates that null should be passed to other methods that require shardId, or use one of the default
      * methods that does not require shardId to be specified.
      *
+     * @param topic the topic to list the shards for.
      * @return a list of names of the shards that exists in the topic, or null if shards are not supported.
      */
-    default List<String> shards() {
+    default List<String> shards(String topic) {
         return null;
     }
 
