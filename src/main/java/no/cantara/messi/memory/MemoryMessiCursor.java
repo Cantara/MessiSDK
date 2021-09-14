@@ -135,7 +135,7 @@ public class MemoryMessiCursor implements MessiCursor {
         public MessiCursor.Builder checkpoint(String checkpoint) {
             this.type = MessiCursorStartingPointType.AT_ULID;
             try {
-                String parts[] = checkpoint.split(":");
+                String[] parts = checkpoint.split(":");
                 this.ulid = ULID.parseULID(parts[0]);
                 this.inclusive = Boolean.parseBoolean(parts[1]);
                 return this;
