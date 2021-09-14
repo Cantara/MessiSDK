@@ -7,6 +7,13 @@ import java.time.Instant;
 
 public interface MessiCursor {
 
+    /**
+     * Create a checkpoint by serializing this cursor.
+     *
+     * @return a serialized cursor that can be used as a checkpoint.
+     */
+    String checkpoint();
+
     interface Builder {
         Builder shardId(String shardId);
 
@@ -23,6 +30,8 @@ public interface MessiCursor {
         Builder externalId(String externalId, Instant externalIdTimestamp, Duration externalIdTimestampTolerance);
 
         Builder inclusive(boolean inclusive);
+
+        Builder checkpoint(String checkpoint);
 
         MessiCursor build();
     }

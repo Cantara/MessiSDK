@@ -56,6 +56,11 @@ public class MemoryMessiCursor implements MessiCursor {
         this.forward = forward;
     }
 
+    @Override
+    public String checkpoint() {
+        return null;
+    }
+
     static class Builder implements MessiCursor.Builder {
 
         String shardId;
@@ -120,6 +125,11 @@ public class MemoryMessiCursor implements MessiCursor {
         @Override
         public Builder inclusive(boolean inclusive) {
             this.inclusive = inclusive;
+            return this;
+        }
+
+        @Override
+        public MessiCursor.Builder checkpoint(String checkpoint) {
             return this;
         }
 

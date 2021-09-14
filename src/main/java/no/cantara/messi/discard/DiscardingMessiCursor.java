@@ -8,6 +8,11 @@ import java.time.Instant;
 
 public class DiscardingMessiCursor implements MessiCursor {
 
+    @Override
+    public String checkpoint() {
+        return "";
+    }
+
     static class Builder implements MessiCursor.Builder {
         @Override
         public Builder shardId(String shardId) {
@@ -46,6 +51,11 @@ public class DiscardingMessiCursor implements MessiCursor {
 
         @Override
         public Builder inclusive(boolean inclusive) {
+            return this;
+        }
+
+        @Override
+        public MessiCursor.Builder checkpoint(String checkpoint) {
             return this;
         }
 

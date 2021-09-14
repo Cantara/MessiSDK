@@ -46,6 +46,15 @@ public interface MessiConsumer extends AutoCloseable {
     void seek(long timestamp);
 
     /**
+     * Creates a cursor that points right after the provided message. This can typically be used for checkpointing.
+     *
+     * @param message
+     * @return
+     * @throws IllegalArgumentException if the message did not come from this stream or is otherwise not compatible
+     */
+    MessiCursor cursorAfter(MessiMessage message);
+
+    /**
      * Returns whether or not the consumer is closed.
      *
      * @return whether the consumer is closed.
