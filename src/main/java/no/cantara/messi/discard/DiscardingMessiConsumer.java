@@ -2,6 +2,7 @@ package no.cantara.messi.discard;
 
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
+import no.cantara.messi.api.MessiCursor;
 import no.cantara.messi.protos.MessiMessage;
 
 import java.util.concurrent.CompletableFuture;
@@ -34,6 +35,16 @@ class DiscardingMessiConsumer implements MessiConsumer {
 
     @Override
     public void seek(long timestamp) {
+    }
+
+    @Override
+    public MessiCursor cursorAt(MessiMessage message) {
+        return new DiscardingMessiCursor.Builder().build();
+    }
+
+    @Override
+    public MessiCursor cursorAfter(MessiMessage message) {
+        return new DiscardingMessiCursor.Builder().build();
     }
 
     @Override

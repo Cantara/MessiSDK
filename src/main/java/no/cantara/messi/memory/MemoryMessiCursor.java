@@ -58,7 +58,10 @@ public class MemoryMessiCursor implements MessiCursor {
 
     @Override
     public String checkpoint() {
-        return null;
+        if (type != MessiCursorStartingPointType.AT_ULID || ulid == null) {
+            throw new IllegalStateException("Unable to checkpoint cursor that is not created from a compatible consumer");
+        }
+        return ulid + ":" + inclusive;
     }
 
     static class Builder implements MessiCursor.Builder {
@@ -130,7 +133,15 @@ public class MemoryMessiCursor implements MessiCursor {
 
         @Override
         public MessiCursor.Builder checkpoint(String checkpoint) {
-            return this;
+            this.type = MessiCursorStartingPointType.AT_ULID;
+            try {
+                String parts[] = checkpoint.split(":");
+                this.ulid = ULID.parseULID(parts[0]);
+                this.inclusive = Boolean.parseBoolean(parts[1]);
+                return this;
+            } catch (RuntimeException e) {
+                throw new IllegalArgumentException("checkpoint is not valid", e);
+            }
         }
 
         @Override

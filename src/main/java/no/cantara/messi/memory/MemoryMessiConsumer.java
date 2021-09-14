@@ -3,6 +3,7 @@ package no.cantara.messi.memory;
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiClosedException;
 import no.cantara.messi.api.MessiConsumer;
+import no.cantara.messi.api.MessiCursor;
 import no.cantara.messi.api.MessiNoSuchExternalIdException;
 import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
@@ -124,6 +125,22 @@ class MemoryMessiConsumer implements MessiConsumer {
                 .ulid(MessiULIDUtils.beginningOf(timestamp))
                 .inclusive(true)
                 .build());
+    }
+
+    @Override
+    public MessiCursor cursorAt(MessiMessage message) {
+        return new MemoryMessiCursor.Builder()
+                .ulid(MessiULIDUtils.toUlid(message.getUlid()))
+                .inclusive(true)
+                .build();
+    }
+
+    @Override
+    public MessiCursor cursorAfter(MessiMessage message) {
+        return new MemoryMessiCursor.Builder()
+                .ulid(MessiULIDUtils.toUlid(message.getUlid()))
+                .inclusive(false)
+                .build();
     }
 
     @Override

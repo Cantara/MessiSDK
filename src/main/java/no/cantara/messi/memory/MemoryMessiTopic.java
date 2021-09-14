@@ -56,14 +56,19 @@ class MemoryMessiTopic {
         prevUlid.set(ulid);
 
         // fake serialization and deserialization
-        MessiMessage copy = MessiMessage.newBuilder(message)
-                .setUlid(MessiUlid.newBuilder().setMsb(ulid.getMostSignificantBits()).setLsb(ulid.getLeastSignificantBits()).build())
-                .setProvider(MessiProvider.newBuilder()
-                        .setShardId("the-only-shard")
-                        .setPublishedTimestamp(System.currentTimeMillis())
-                        .setSequenceNumber(ulid.toString())
-                        .build())
-                .build();
+        MessiMessage.Builder copyBuilder = MessiMessage.newBuilder(message);
+        copyBuilder.setUlid(MessiUlid.newBuilder()
+                .setMsb(ulid.getMostSignificantBits())
+                .setLsb(ulid.getLeastSignificantBits())
+                .build());
+        if (!message.hasProvider()) {
+            copyBuilder.setProvider(MessiProvider.newBuilder()
+                    .setShardId("the-only-shard")
+                    .setPublishedTimestamp(System.currentTimeMillis())
+                    .setSequenceNumber(ulid.toString())
+                    .build());
+        }
+        MessiMessage copy = copyBuilder.build();
 
         data.put(ulid, copy);
 
