@@ -21,7 +21,8 @@ public class MessiULIDUtils {
     }
 
     /**
-     * Return the ULID.Value that represents beginning of a given timestamp.
+     * Return the ULID.Value that represents beginning of a given timestamp. Be careful not to use these as "random"
+     * IDs, these are intended for searching.
      *
      * @param timestamp the timestamp component of the returned ulid.
      * @return the beginning-of-time ulid
@@ -31,7 +32,8 @@ public class MessiULIDUtils {
     }
 
     /**
-     * Return the ULID.Value that represents beginning of all time.
+     * Return the ULID.Value that represents beginning of all time. Be careful not to use these as "random"
+     * IDs, these are intended for searching.
      *
      * @return the beginning-of-time ulid
      */
@@ -40,8 +42,10 @@ public class MessiULIDUtils {
     }
 
     /**
-     * Generate a new unique ulid. If the newly generated ulid has a new timestamp than the previous one, then the very
-     * least significant bit will be set to 1 (which is higher than beginning-of-time ulid used by consumer).
+     * Generate a new unique ulid. If the previous timestamp is in the future, this method will block (sleep) the
+     * current thread (up to 30 seconds) until that time is reached in order to avoid non-increasing IDs. Newly
+     * generated IDs will be using the time of the system-clock and a random part for the ID unless previous id has same
+     * timestamp, then it will use the previous id + 1.
      *
      * @param generator    the ulid generator
      * @param previousUlid the previous ulid in the sequence
@@ -66,11 +70,8 @@ public class MessiULIDUtils {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-            } else if (diff > 0) {
-                // start at lsb 1, to avoid inclusive/exclusive semantics when searching
-                return new ULID.Value((timestamp << 16) & 0xFFFFFFFFFFFF0000L, 1L);
             }
-            // diff == 0
+            // diff >= 0
             value = generator.nextStrictlyMonotonicValue(previousUlid, timestamp).orElse(null);
         } while (value == null);
         return value;
