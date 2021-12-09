@@ -9,6 +9,7 @@ import no.cantara.messi.api.MessiClientFactory;
 import no.cantara.messi.api.MessiConsumer;
 import no.cantara.messi.api.MessiMetadataClient;
 import no.cantara.messi.api.MessiProducer;
+import no.cantara.messi.api.MessiTimestampUtils;
 import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
 import no.cantara.messi.protos.MessiOrdering;
@@ -28,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
@@ -49,6 +51,14 @@ public class MessiClientTck {
     @Test
     public void thatLastExternalIdOfEmptyTopicCanBeReadAndIsNull() {
         assertNull(client.lastMessage("the-topic"));
+    }
+
+    @Test
+    public void thatEmptyTopicCanBeReadWithNullReturned() throws InterruptedException {
+        try (MessiConsumer consumer = client.consumer("the-topic")) {
+            MessiMessage message = consumer.receive(10, TimeUnit.MILLISECONDS);
+            assertNull(message);
+        }
     }
 
     @Test
@@ -94,6 +104,7 @@ public class MessiClientTck {
                             .putData("payload2", ByteString.copyFromUtf8("p4"))
                             .build(),
                     MessiMessage.newBuilder()
+                            .setTimestamp(MessiTimestampUtils.toTimestamp(Instant.parse("2021-12-09T11:59:18.052Z")))
                             .setOrdering(MessiOrdering.newBuilder()
                                     .setGroup("og1")
                                     .setSequenceNumber(3)
@@ -101,7 +112,8 @@ public class MessiClientTck {
                             .setExternalId("c")
                             .putData("payload1", ByteString.copyFromUtf8("p5"))
                             .putData("payload2", ByteString.copyFromUtf8("p6"))
-                            .setProvider(MessiProvider.newBuilder()
+                            .setFirstProvider(MessiProvider.newBuilder()
+                                    .setTechnology("JUNIT")
                                     .setPublishedTimestamp(123)
                                     .setShardId("shardId123")
                                     .setSequenceNumber("three")
@@ -140,15 +152,23 @@ public class MessiClientTck {
             {
                 MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
                 assertNotNull(message.getUlid());
+                assertEquals(message.getTimestamp(), MessiTimestampUtils.toTimestamp(Instant.parse("2021-12-09T11:59:18.052Z")));
                 assertEquals(message.getOrdering().getGroup(), "og1");
                 assertEquals(message.getOrdering().getSequenceNumber(), 3);
                 assertEquals(message.getExternalId(), "c");
                 assertEquals(message.getDataCount(), 2);
                 assertEquals(message.getDataOrThrow("payload1"), ByteString.copyFromUtf8("p5"));
                 assertEquals(message.getDataOrThrow("payload2"), ByteString.copyFromUtf8("p6"));
-                assertEquals(message.getProvider().getPublishedTimestamp(), 123);
-                assertEquals(message.getProvider().getShardId(), "shardId123");
-                assertEquals(message.getProvider().getSequenceNumber(), "three");
+                assertEquals(message.getFirstProvider().getTechnology(), "JUNIT");
+                assertEquals(message.getFirstProvider().getPublishedTimestamp(), 123);
+                assertEquals(message.getFirstProvider().getShardId(), "shardId123");
+                assertEquals(message.getFirstProvider().getSequenceNumber(), "three");
+                assertEquals(message.getProvider().getTechnology(), "Messi-inmemory");
+                assertNotEquals(message.getProvider().getPublishedTimestamp(), 0);
+                assertNotEquals(message.getProvider().getPublishedTimestamp(), 123);
+                assertEquals(message.getProvider().getShardId(), "the-only-shard");
+                assertNotNull(message.getProvider().getSequenceNumber());
+                assertNotEquals(message.getProvider().getSequenceNumber(), "three");
                 assertEquals(message.getSource().getClientSourceId(), "client-source-id-123");
                 assertEquals(message.getAttributesCount(), 3);
                 assertEquals(message.getAttributesOrThrow("key1"), "value1");
