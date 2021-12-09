@@ -2,37 +2,32 @@ package no.cantara.messi.memory;
 
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiClosedException;
-import no.cantara.messi.api.MessiConsumer;
 import no.cantara.messi.api.MessiCursor;
 import no.cantara.messi.api.MessiNoSuchExternalIdException;
+import no.cantara.messi.api.MessiStreamingConsumer;
 import no.cantara.messi.api.MessiULIDUtils;
 import no.cantara.messi.protos.MessiMessage;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-class MemoryMessiConsumer implements MessiConsumer {
+class MemoryMessiStreamingConsumer implements MessiStreamingConsumer {
 
     final MemoryMessiTopic topic;
-    final Consumer<MemoryMessiConsumer> closeAction;
     final AtomicReference<MemoryMessiCursor> position = new AtomicReference<>();
+    final Consumer<MemoryMessiStreamingConsumer> closeAction;
     final AtomicBoolean closed = new AtomicBoolean(false);
 
-    MemoryMessiConsumer(MemoryMessiTopic topic, MemoryMessiCursor initialPosition, Consumer<MemoryMessiConsumer> closeAction) {
+    MemoryMessiStreamingConsumer(MemoryMessiTopic topic, MemoryMessiCursor initialPosition, Consumer<MemoryMessiStreamingConsumer> closeAction) {
+        Objects.requireNonNull(initialPosition);
         this.topic = topic;
         this.closeAction = closeAction;
-        if (initialPosition == null) {
-            MemoryMessiCursor cursor = new MemoryMessiCursor.Builder()
-                    .oldest()
-                    .build();
-            this.position.set(cursor);
-        } else {
-            MemoryMessiCursor resolvedCursor = resolve(initialPosition);
-            this.position.set(resolvedCursor);
-        }
+        MemoryMessiCursor resolvedCursor = resolve(initialPosition);
+        this.position.set(resolvedCursor);
     }
 
     public MemoryMessiCursor resolve(MemoryMessiCursor unresolvedCursor) {
@@ -40,7 +35,10 @@ class MemoryMessiConsumer implements MessiConsumer {
             case AT_ULID:
                 return unresolvedCursor;
             case OLDEST_RETAINED:
-                return null;
+                return new MemoryMessiCursor.Builder()
+                        .ulid(new ULID.Value(0L, 0L))
+                        .inclusive(true)
+                        .build();
             case NOW:
                 return new MemoryMessiCursor.Builder()
                         .ulid(MessiULIDUtils.beginningOf(System.currentTimeMillis()))
@@ -120,25 +118,16 @@ class MemoryMessiConsumer implements MessiConsumer {
     }
 
     @Override
+    public MessiCursor currentPosition() {
+        return null;
+    }
+
+    @Override
     public void seek(long timestamp) {
         position.set(new MemoryMessiCursor.Builder()
                 .ulid(MessiULIDUtils.beginningOf(timestamp))
                 .inclusive(true)
                 .build());
-    }
-
-    @Override
-    public MessiCursor cursorAt(MessiMessage message) {
-        String shardId = topic.firstShard();
-        MemoryMessiShard shard = topic.shardOf(shardId);
-        return shard.cursorAt(message);
-    }
-
-    @Override
-    public MessiCursor cursorAfter(MessiMessage message) {
-        String shardId = topic.firstShard();
-        MemoryMessiShard shard = topic.shardOf(shardId);
-        return shard.cursorAfter(message);
     }
 
     @Override

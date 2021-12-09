@@ -68,7 +68,8 @@ public class DiscardingMessiClientTest {
         }
         try (MessiConsumer consumer = client.consumer("the-topic")) {
             assertNull(consumer.receive(0, TimeUnit.MILLISECONDS));
-            assertNull(consumer.receiveAsync().join());
+            assertNull(consumer.receiveAsync()
+                    .join());
             assertEquals(consumer.topic(), "the-topic");
             consumer.seek(123);
             assertFalse(consumer.isClosed());

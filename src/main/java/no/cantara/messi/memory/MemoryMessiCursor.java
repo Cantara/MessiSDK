@@ -132,7 +132,7 @@ public class MemoryMessiCursor implements MessiCursor {
         }
 
         @Override
-        public MessiCursor.Builder checkpoint(String checkpoint) {
+        public Builder checkpoint(String checkpoint) {
             this.type = MessiCursorStartingPointType.AT_ULID;
             try {
                 String[] parts = checkpoint.split(":");

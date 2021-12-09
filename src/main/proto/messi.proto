@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 option java_multiple_files = true;
 option java_package = "no.cantara.messi.protos";
 
@@ -16,6 +18,7 @@ message MessiProvider {
   optional uint64 publishedTimestamp = 1;
   optional string shardId = 2;
   optional string sequenceNumber = 3;
+  optional string technology = 4;
 }
 
 message MessiOrdering {
@@ -35,4 +38,7 @@ message MessiMessage {
   optional MessiSource source = 6;
   optional MessiProvider provider = 7;
   optional MessiOrdering ordering = 8;
+
+  google.protobuf.Timestamp timestamp = 9;
+  optional MessiProvider firstProvider = 10;
 }
