@@ -274,8 +274,11 @@ class MemoryMessiTopic implements MessiTopic {
         MemoryMessiShard shard = managedShardRef.get();
         if (shard != null) {
             shard.close();
+            managedShardRef.set(null);
         }
         data.clear();
+        primaryQ.clear();
+        deliveredQ.clear();
         closed.set(true);
     }
 }

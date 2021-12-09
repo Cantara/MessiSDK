@@ -108,8 +108,10 @@ public class MemoryMessiShard implements MessiShard {
         for (MemoryMessiQueuingConsumer queueingConsumer : queueingConsumers) {
             queueingConsumer.close();
         }
+        queueingConsumers.clear();
         for (MemoryMessiStreamingConsumer streamingConsumer : streamingConsumers) {
             streamingConsumer.close();
         }
+        streamingConsumers.clear();
     }
 }
