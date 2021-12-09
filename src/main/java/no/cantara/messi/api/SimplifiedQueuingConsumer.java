@@ -23,6 +23,9 @@ public class SimplifiedQueuingConsumer implements MessiConsumer {
     @Override
     public MessiMessage receive(int timeout, TimeUnit unit) throws InterruptedException, MessiClosedException {
         MessiQueuingMessageHandle handle = queuingConsumer.receive(timeout, unit);
+        if (handle == null) {
+            return null;
+        }
         handle.ack(); // NOTE: This is very likely to lose messages at some point.
         return handle.message();
     }
@@ -31,10 +34,12 @@ public class SimplifiedQueuingConsumer implements MessiConsumer {
     public CompletableFuture<? extends MessiMessage> receiveAsync() {
         return queuingConsumer.receiveAsync()
                 .thenApply(handle -> {
+                    if (handle == null) {
+                        return null;
+                    }
                     handle.ack(); // NOTE: This is very likely to lose messages at some point.
-                    return handle;
-                })
-                .thenApply(MessiQueuingAsyncMessageHandle::message);
+                    return handle.message();
+                });
     }
 
     @Override
