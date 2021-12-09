@@ -64,7 +64,7 @@ public interface MessiClient extends AutoCloseable {
         if (shard.supportsStreaming()) {
             MessiCursor cursor = initialPosition;
             if (cursor == null) {
-                cursor = shard.cursorAtTimeHorizon(); // the oldest retained message
+                cursor = shard.cursorAtTrimHorizon(); // the oldest retained message
             }
             MessiStreamingConsumer streamingConsumer = shard.streamingConsumer(cursor);
             return new SimplifiedStreamingConsumer(shard, streamingConsumer);

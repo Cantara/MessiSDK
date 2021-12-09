@@ -70,7 +70,7 @@ public class DiscardingMessiShard implements MessiShard {
     }
 
     @Override
-    public MessiCursor cursorAtTimeHorizon() {
+    public MessiCursor cursorAtTrimHorizon() {
         return null;
     }
 

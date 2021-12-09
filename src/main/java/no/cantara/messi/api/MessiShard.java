@@ -1,6 +1,5 @@
 package no.cantara.messi.api;
 
-import no.cantara.messi.memory.MemoryMessiCursor;
 import no.cantara.messi.protos.MessiMessage;
 
 public interface MessiShard extends AutoCloseable {
@@ -132,7 +131,7 @@ public interface MessiShard extends AutoCloseable {
      * @throws UnsupportedOperationException if the underlying technology does not support efficiently reading the last
      *                                       message in the topic.
      */
-    MemoryMessiCursor cursorHead();
+    MessiCursor cursorHead();
 
     /**
      * Will return a cursor pointed at the oldest retained message in the stream and will vary with retention policy.
@@ -140,5 +139,5 @@ public interface MessiShard extends AutoCloseable {
      * @return a cursor pointed at the oldest retained message in the stream
      * @throws MessiClosedException if the topic was closed before or is closed during this call.
      */
-    MessiCursor cursorAtTimeHorizon();
+    MessiCursor cursorAtTrimHorizon();
 }

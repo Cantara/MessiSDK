@@ -274,7 +274,7 @@ public class MessiStreamingConsumerTck {
                     MessiMessage.newBuilder().setExternalId("d").putData("payload1", ByteString.copyFrom(new byte[8])).putData("payload2", ByteString.copyFrom(new byte[8])).build()
             );
         }
-        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTimeHorizon())) {
+        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTrimHorizon())) {
             MessiMessage message = consumer.receive(1, TimeUnit.SECONDS);
             assertEquals(message.getExternalId(), "a");
         }
@@ -371,7 +371,7 @@ public class MessiStreamingConsumerTck {
         }
         String checkpointAt;
         String checkpointAfter;
-        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTimeHorizon())) {
+        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTrimHorizon())) {
             MessiMessage a = consumer.receive(100, TimeUnit.MILLISECONDS);
             assertNotNull(a);
             MessiMessage b = consumer.receive(100, TimeUnit.MILLISECONDS);
@@ -428,7 +428,7 @@ public class MessiStreamingConsumerTck {
             Thread.sleep(5);
             timestampAfterD = System.currentTimeMillis();
         }
-        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTimeHorizon())) {
+        try (MessiStreamingConsumer consumer = shard.streamingConsumer(shard.cursorAtTrimHorizon())) {
             consumer.seek(timestampAfterD);
             assertNull(consumer.receive(100, TimeUnit.MILLISECONDS));
             consumer.seek(timestampBeforeD);

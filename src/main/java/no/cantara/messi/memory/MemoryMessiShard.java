@@ -95,7 +95,7 @@ public class MemoryMessiShard implements MessiShard {
                 .build();
     }
 
-    public MemoryMessiCursor cursorAtTimeHorizon() {
+    public MemoryMessiCursor cursorAtTrimHorizon() {
         return new MemoryMessiCursor.Builder()
                 .shardId(shardId)
                 .oldest()
