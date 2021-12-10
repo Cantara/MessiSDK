@@ -140,4 +140,7 @@ public interface MessiShard extends AutoCloseable {
      * @throws MessiClosedException if the topic was closed before or is closed during this call.
      */
     MessiCursor cursorAtTrimHorizon();
+
+    @Override
+    void close();
 }
