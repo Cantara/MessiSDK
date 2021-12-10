@@ -7,7 +7,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A subscription based consumer that can be used to receive and acknowledge messages on a stream.
+ *
+ * @deprecated Use either {@link MessiQueuingConsumer} or {@link MessiStreamingConsumer} depending on needs
+ * and available providers.
  */
+@Deprecated
 public interface MessiConsumer extends AutoCloseable {
 
     /**
