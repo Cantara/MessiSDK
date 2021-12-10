@@ -13,11 +13,13 @@ import java.util.function.Consumer;
 
 class MemoryMessiQueuingConsumer implements MessiQueuingConsumer {
 
-    private final MemoryMessiTopic topic;
+    final MemoryMessiShard shard;
+    final MemoryMessiTopic topic;
     final Consumer<MemoryMessiQueuingConsumer> closeAction;
     final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public MemoryMessiQueuingConsumer(MemoryMessiTopic topic, Consumer<MemoryMessiQueuingConsumer> closeAction) {
+    public MemoryMessiQueuingConsumer(MemoryMessiShard shard, MemoryMessiTopic topic, Consumer<MemoryMessiQueuingConsumer> closeAction) {
+        this.shard = shard;
         this.topic = topic;
         this.closeAction = closeAction;
     }
@@ -49,6 +51,11 @@ class MemoryMessiQueuingConsumer implements MessiQueuingConsumer {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    @Override
+    public MemoryMessiShard shard() {
+        return shard;
     }
 
     private MessiMessage doReceive(int timeout, TimeUnit unit) throws InterruptedException {

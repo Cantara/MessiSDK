@@ -54,6 +54,13 @@ public interface MessiStreamingConsumer extends AutoCloseable {
     void seek(long timestamp);
 
     /**
+     * Get the shard that this consumer belongs to.
+     *
+     * @return the shard that this consumer belongs to.
+     */
+    MessiShard shard();
+
+    /**
      * Returns whether or not the consumer is closed.
      *
      * @return whether the consumer is closed.

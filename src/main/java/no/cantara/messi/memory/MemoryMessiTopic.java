@@ -30,6 +30,7 @@ import static java.util.Optional.ofNullable;
 class MemoryMessiTopic implements MessiTopic {
 
     final AtomicBoolean closed = new AtomicBoolean(false);
+    final MemoryMessiClient client;
     final String topic;
     final NavigableMap<ULID.Value, MessiMessage> data = new ConcurrentSkipListMap<>(); // protected by lock
     final ReentrantLock lock = new ReentrantLock();
@@ -53,7 +54,8 @@ class MemoryMessiTopic implements MessiTopic {
     final List<MemoryMessiProducer> producers = new CopyOnWriteArrayList<>();
     final AtomicReference<MemoryMessiShard> managedShardRef = new AtomicReference<>();
 
-    MemoryMessiTopic(String topic) {
+    MemoryMessiTopic(MemoryMessiClient client, String topic) {
+        this.client = client;
         this.topic = topic;
     }
 
@@ -258,6 +260,11 @@ class MemoryMessiTopic implements MessiTopic {
     @Override
     public MemoryMessiMetadataClient metadata() {
         return new MemoryMessiMetadataClient(topic);
+    }
+
+    @Override
+    public MemoryMessiClient client() {
+        return client;
     }
 
     @Override

@@ -27,7 +27,7 @@ public class MemoryMessiShard implements MessiShard {
     }
 
     public MessiQueuingConsumer queuingConsumer() {
-        return new MemoryMessiQueuingConsumer(topic, queueingConsumers::remove);
+        return new MemoryMessiQueuingConsumer(this, topic, queueingConsumers::remove);
     }
 
     public boolean supportsStreaming() {
@@ -35,7 +35,7 @@ public class MemoryMessiShard implements MessiShard {
     }
 
     public MessiStreamingConsumer streamingConsumer(MessiCursor initialPosition) {
-        MemoryMessiStreamingConsumer consumer = new MemoryMessiStreamingConsumer(topic, (MemoryMessiCursor) initialPosition, streamingConsumers::remove);
+        MemoryMessiStreamingConsumer consumer = new MemoryMessiStreamingConsumer(this, topic, (MemoryMessiCursor) initialPosition, streamingConsumers::remove);
         streamingConsumers.add(consumer);
         return consumer;
     }
@@ -101,6 +101,11 @@ public class MemoryMessiShard implements MessiShard {
                 .oldest()
                 .inclusive(true)
                 .build();
+    }
+
+    @Override
+    public MemoryMessiTopic topic() {
+        return topic;
     }
 
     @Override

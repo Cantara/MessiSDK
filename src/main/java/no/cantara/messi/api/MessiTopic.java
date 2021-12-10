@@ -49,6 +49,13 @@ public interface MessiTopic extends AutoCloseable {
      */
     MessiMetadataClient metadata();
 
+    /**
+     * Get the client that this topic belongs to.
+     *
+     * @return the client that this topic belongs to.
+     */
+    MessiClient client();
+
     boolean isClosed();
 
     @Override

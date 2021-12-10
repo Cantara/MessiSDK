@@ -5,9 +5,11 @@ import no.cantara.messi.api.MessiTopic;
 
 public class DiscardingMessiTopic implements MessiTopic {
 
+    final DiscardingMessiClient client;
     final String name;
 
-    DiscardingMessiTopic(String name) {
+    DiscardingMessiTopic(DiscardingMessiClient client, String name) {
+        this.client = client;
         this.name = name;
     }
 
@@ -29,6 +31,11 @@ public class DiscardingMessiTopic implements MessiTopic {
     @Override
     public DiscardingMessiMetadataClient metadata() {
         return new DiscardingMessiMetadataClient(name);
+    }
+
+    @Override
+    public DiscardingMessiClient client() {
+        return client;
     }
 
     @Override

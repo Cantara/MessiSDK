@@ -10,9 +10,11 @@ import java.util.concurrent.TimeUnit;
 
 public class DiscardingMessiStreamingConsumer implements MessiStreamingConsumer {
 
+    final DiscardingMessiShard shard;
     final String topicName;
 
-    public DiscardingMessiStreamingConsumer(String topicName) {
+    public DiscardingMessiStreamingConsumer(DiscardingMessiShard shard, String topicName) {
+        this.shard = shard;
         this.topicName = topicName;
     }
 
@@ -40,7 +42,11 @@ public class DiscardingMessiStreamingConsumer implements MessiStreamingConsumer 
 
     @Override
     public void seek(long timestamp) {
+    }
 
+    @Override
+    public DiscardingMessiShard shard() {
+        return shard;
     }
 
     @Override

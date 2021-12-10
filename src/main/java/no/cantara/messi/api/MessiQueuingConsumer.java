@@ -36,6 +36,13 @@ public interface MessiQueuingConsumer extends AutoCloseable {
     CompletableFuture<? extends MessiQueuingAsyncMessageHandle> receiveAsync();
 
     /**
+     * Get the shard that this consumer belongs to.
+     *
+     * @return the shard that this consumer belongs to.
+     */
+    MessiShard shard();
+
+    /**
      * Returns whether or not the consumer is closed.
      *
      * @return whether the consumer is closed.

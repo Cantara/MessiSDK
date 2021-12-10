@@ -16,7 +16,7 @@ public class MemoryMessiClient implements MessiClient {
 
     @Override
     public MemoryMessiTopic topicOf(String name) {
-        return topicByName.computeIfAbsent(name, MemoryMessiTopic::new);
+        return topicByName.computeIfAbsent(name, topic -> new MemoryMessiTopic(this, topic));
     }
 
     @Override

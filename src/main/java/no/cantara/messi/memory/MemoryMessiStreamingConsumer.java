@@ -17,12 +17,14 @@ import java.util.function.Consumer;
 
 class MemoryMessiStreamingConsumer implements MessiStreamingConsumer {
 
+    final MemoryMessiShard shard;
     final MemoryMessiTopic topic;
     final AtomicReference<MemoryMessiCursor> position = new AtomicReference<>();
     final Consumer<MemoryMessiStreamingConsumer> closeAction;
     final AtomicBoolean closed = new AtomicBoolean(false);
 
-    MemoryMessiStreamingConsumer(MemoryMessiTopic topic, MemoryMessiCursor initialPosition, Consumer<MemoryMessiStreamingConsumer> closeAction) {
+    MemoryMessiStreamingConsumer(MemoryMessiShard shard, MemoryMessiTopic topic, MemoryMessiCursor initialPosition, Consumer<MemoryMessiStreamingConsumer> closeAction) {
+        this.shard = shard;
         Objects.requireNonNull(initialPosition);
         this.topic = topic;
         this.closeAction = closeAction;
@@ -128,6 +130,11 @@ class MemoryMessiStreamingConsumer implements MessiStreamingConsumer {
                 .ulid(MessiULIDUtils.beginningOf(timestamp))
                 .inclusive(true)
                 .build());
+    }
+
+    @Override
+    public MemoryMessiShard shard() {
+        return shard;
     }
 
     @Override

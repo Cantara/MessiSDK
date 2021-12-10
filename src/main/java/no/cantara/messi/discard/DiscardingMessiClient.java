@@ -8,7 +8,7 @@ public class DiscardingMessiClient implements MessiClient {
 
     @Override
     public DiscardingMessiTopic topicOf(String name) {
-        return new DiscardingMessiTopic(name);
+        return new DiscardingMessiTopic(this, name);
     }
 
     @Override

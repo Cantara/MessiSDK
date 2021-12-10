@@ -141,6 +141,13 @@ public interface MessiShard extends AutoCloseable {
      */
     MessiCursor cursorAtTrimHorizon();
 
+    /**
+     * Get the topic that this shard belongs to.
+     *
+     * @return the topic that this shard belongs to.
+     */
+    MessiTopic topic();
+
     @Override
     void close();
 }

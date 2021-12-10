@@ -21,7 +21,7 @@ public class DiscardingMessiShard implements MessiShard {
 
     @Override
     public DiscardingMessiQueuingConsumer queuingConsumer() {
-        return new DiscardingMessiQueuingConsumer();
+        return new DiscardingMessiQueuingConsumer(this);
     }
 
     @Override
@@ -31,7 +31,7 @@ public class DiscardingMessiShard implements MessiShard {
 
     @Override
     public DiscardingMessiStreamingConsumer streamingConsumer(MessiCursor initialPosition) {
-        return new DiscardingMessiStreamingConsumer(topic.name());
+        return new DiscardingMessiStreamingConsumer(this, topic.name());
     }
 
     @Override
@@ -75,6 +75,11 @@ public class DiscardingMessiShard implements MessiShard {
     }
 
     @Override
-    public void close() throws Exception {
+    public DiscardingMessiTopic topic() {
+        return topic;
+    }
+
+    @Override
+    public void close() {
     }
 }

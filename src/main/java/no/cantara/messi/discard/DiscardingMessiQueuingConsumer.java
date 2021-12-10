@@ -9,6 +9,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class DiscardingMessiQueuingConsumer implements MessiQueuingConsumer {
+
+    final DiscardingMessiShard shard;
+
+    public DiscardingMessiQueuingConsumer(DiscardingMessiShard shard) {
+        this.shard = shard;
+    }
+
     @Override
     public String topic() {
         return null;
@@ -22,6 +29,11 @@ public class DiscardingMessiQueuingConsumer implements MessiQueuingConsumer {
     @Override
     public CompletableFuture<? extends MessiQueuingAsyncMessageHandle> receiveAsync() {
         return null;
+    }
+
+    @Override
+    public DiscardingMessiShard shard() {
+        return shard;
     }
 
     @Override
