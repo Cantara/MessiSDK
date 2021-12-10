@@ -98,7 +98,7 @@ public interface MessiShard extends AutoCloseable {
      * called, there is no guarantee that the same message will be the last message after returning from this method if
      * more messages are produced.
      *
-     * @return the current last message in the stream
+     * @return the current last message in the stream, or null if stream is empty.
      * @throws MessiClosedException          if the producer was closed before or is closed during this call.
      * @throws UnsupportedOperationException if the underlying technology does not support efficiently reading the last
      *                                       message in the topic.
