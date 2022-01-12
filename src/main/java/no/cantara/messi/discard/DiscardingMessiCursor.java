@@ -2,6 +2,7 @@ package no.cantara.messi.discard;
 
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiCursor;
+import no.cantara.messi.api.MessiNotCompatibleCursorException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -11,6 +12,11 @@ public class DiscardingMessiCursor implements MessiCursor {
     @Override
     public String checkpoint() {
         return "";
+    }
+
+    @Override
+    public int compareTo(MessiCursor o) throws NullPointerException, MessiNotCompatibleCursorException {
+        throw new MessiNotCompatibleCursorException("This cursor can never be compared to anything, please use a different provider");
     }
 
     static class Builder implements MessiCursor.Builder {

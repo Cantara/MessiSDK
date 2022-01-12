@@ -3,6 +3,7 @@ package no.cantara.messi.memory;
 import de.huxhorn.sulky.ulid.ULID;
 import no.cantara.messi.api.MessiCursor;
 import no.cantara.messi.api.MessiCursorStartingPointType;
+import no.cantara.messi.api.MessiNotCompatibleCursorException;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -62,6 +63,33 @@ public class MemoryMessiCursor implements MessiCursor {
             throw new IllegalStateException("Unable to checkpoint cursor that is not created from a compatible consumer");
         }
         return ulid + ":" + inclusive;
+    }
+
+    @Override
+    public int compareTo(MessiCursor _o) throws NullPointerException, MessiNotCompatibleCursorException {
+        Objects.requireNonNull(_o);
+        if (!getClass().equals(_o.getClass())) {
+            throw new MessiNotCompatibleCursorException(String.format("Cursor classes are not compatible. this.getClass(): %s, other.getClass(): %s", getClass(), _o.getClass()));
+        }
+        if (type != MessiCursorStartingPointType.AT_ULID || ulid == null) {
+            throw new MessiNotCompatibleCursorException(String.format("This cursor must have this.type=%s to be compared and this.ulid must be non-null.", MessiCursorStartingPointType.AT_ULID));
+        }
+        MemoryMessiCursor o = (MemoryMessiCursor) _o;
+        if (o.type != MessiCursorStartingPointType.AT_ULID || o.ulid == null) {
+            throw new MessiNotCompatibleCursorException(String.format("Other cursor must have other.type=%s to be compared and other.ulid must be non-null.", MessiCursorStartingPointType.AT_ULID));
+        }
+        int comparison = ulid.compareTo(o.ulid);
+        if (comparison != 0) {
+            return comparison;
+        }
+        if (inclusive == o.inclusive) {
+            return 0;
+        }
+        if (inclusive) {
+            return -1;
+        } else {
+            return 1;
+        }
     }
 
     static class Builder implements MessiCursor.Builder {
