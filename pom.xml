@@ -4,7 +4,7 @@
 
     <groupId>no.cantara.messi</groupId>
     <artifactId>messi-sdk</artifactId>
-    <version>0.7.41</version>
+    <version>0.7.42-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Messi SDK</name>
@@ -37,7 +37,7 @@
         <connection>scm:git:git://github.com/Cantara/MessiSDK.git</connection>
         <developerConnection>scm:git:git@github.com:Cantara/MessiSDK.git</developerConnection>
         <url>https://github.com/Cantara/MessiSDK/tree/master</url>
-        <tag>messi-sdk-0.7.41</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
