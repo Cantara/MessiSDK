@@ -14,6 +14,7 @@
 
     <properties>
         <module.build.sourceEncoding>UTF-8</module.build.sourceEncoding>
+        <protobuf.java.version>4.28.2</protobuf.java.version>
     </properties>
 
     <licenses>
@@ -59,7 +60,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.25.5</version>
+            <version>${protobuf.java.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -151,8 +152,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <target>11</target>
-                    <source>11</source>
+                    <release>11</release>
                     <encoding>${module.build.sourceEncoding}</encoding>
                     <meminitial>64m</meminitial>
                     <maxmem>512m</maxmem>
@@ -181,7 +181,8 @@
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>
                 <configuration>
-                    <protocArtifact>com.google.protobuf:protoc:3.17.3:exe:${os.detected.classifier}</protocArtifact>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.java.version}:exe:${os.detected.classifier}
+                    </protocArtifact>
                 </configuration>
                 <executions>
                     <execution>
