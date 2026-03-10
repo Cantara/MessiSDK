@@ -1,0 +1,25 @@
+id: messi-sdk
+name: Messi SDK
+version: 0.8.12-SNAPSHOT
+description: |
+  Core SDK for the Messi persistent event-streaming platform. Defines the
+  provider-agnostic API for producing and consuming ordered, replayable event
+  streams. Backend implementations are provided by separate provider modules.
+units:
+  - id: api
+    name: API
+    type: sdk
+    description: MessiClient, MessiProducer, and MessiConsumer provider-agnostic interfaces.
+    path: src/main/java/no/cantara/messi
+  - id: model
+    name: Model
+    type: component
+    description: MessiMessage and message metadata types shared across all providers.
+  - id: spi
+    name: SPI
+    type: component
+    description: Service Provider Interface for backend implementations to implement.
+  - id: util
+    name: Utilities
+    type: component
+    description: Stream utilities and helper classes for common event-stream operations.
