@@ -1,0 +1,228 @@
+name: cantara-messi
+version: 1.0.0
+description: >
+  Messi event-streaming SDK and provider ecosystem. Covers the provider-agnostic
+  API (MessiClient, MessiTopic, MessiShard, MessiProducer, MessiConsumer), the
+  topic/shard/cursor model, streaming vs queuing consumer patterns, and the three
+  AWS provider implementations (Kinesis, S3, SQS).
+
+  Trigger phrases: "messi, messi sdk, event streaming, messi producer, messi consumer,
+  messi kinesis, messi s3, messi sqs, messi topic, messi shard, messi cursor,
+  message queue cantara, event stream cantara, messi provider"
+
+context:
+  org: cantara
+  repos:
+    - MessiSDK (core API + in-memory provider)
+    - MessiKinesisProvider (AWS Kinesis backend)
+    - MessiS3Provider (AWS S3 archival backend)
+    - MessiSQSProvider (AWS SQS queuing backend)
+
+instructions: |
+  ## Overview
+
+  Messi is Cantara's provider-agnostic event-streaming SDK. It defines a unified API for
+  producing and consuming ordered, replayable event streams. Backend implementations are
+  pluggable via the Java ServiceLoader SPI (`MessiClientFactory`).
+
+  **Package root:** `no.cantara.messi.api`
+  **Message type:** `no.cantara.messi.protos.MessiMessage` (Protocol Buffers)
+  **Group ID:** `no.cantara.messi`
+  **Current versions:** SDK 0.8.12-SNAPSHOT, Kinesis 0.8.8, S3 0.2, SQS 0.8.33
+
+  ## Core API Hierarchy
+
+  ```
+  MessiClient (top-level entry point)
+    └─ topicOf(name) -> MessiTopic
+         ├─ producer() -> MessiProducer
+         ├─ shards() -> List<String>
+         ├─ firstShard() -> String (default: "the-only-shard")
+         ├─ shardOf(shardId) -> MessiShard
+         │    ├─ supportsStreaming() / streamingConsumer(cursor) -> MessiStreamingConsumer
+         │    ├─ supportsQueuing() / queuingConsumer() -> MessiQueuingConsumer
+         │    ├─ cursorOf() -> MessiCursor.Builder
+         │    ├─ cursorAtTrimHorizon() -> MessiCursor (oldest retained)
+         │    ├─ cursorAtLastMessage() -> MessiCursor
+         │    ├─ cursorAfterLastMessage() -> MessiCursor
+         │    ├─ cursorHead() -> MessiCursor (always points to next produced)
+         │    ├─ cursorAt(message) -> MessiCursor (before message)
+         │    └─ cursorAfter(message) -> MessiCursor (after message)
+         └─ metadata() -> MessiMetadataClient
+  ```
+
+  ## Two Consumer Models
+
+  ### Streaming Consumer (`MessiStreamingConsumer`)
+  - Client controls position in the stream via cursors
+  - Client must checkpoint its own progress
+  - Guarantees: at-least-once, strictly ordered
+  - No server-side state needed
+  - Best for: replay, event sourcing, ordered processing, high throughput
+
+  ### Queuing Consumer (`MessiQueuingConsumer`)
+  - Server tracks message delivery state
+  - Client must ack/delete messages after processing (visibility timeout)
+  - Guarantees: at-least-once, best-effort ordering
+  - Messages re-delivered if not acked in time
+  - Best for: work distribution, fan-out, where ordering is less critical
+
+  **Simplified wrappers:** `SimplifiedStreamingConsumer` and `SimplifiedQueuingConsumer`
+  implement the deprecated `MessiConsumer` interface for backward compatibility.
+
+  ## Cursor System
+
+  `MessiCursor` represents a position in the stream. Key starting points (`MessiCursorStartingPointType`):
+  - `OLDEST_RETAINED` -- trim horizon (oldest message kept by retention policy)
+  - `NOW` -- current head of stream
+  - `AT_ULID` -- specific ULID position
+  - `AT_EXTERNAL_ID` -- external ID with timestamp tolerance
+  - `AT_PROVIDER_TIME` -- provider-specific timestamp
+  - `AT_PROVIDER_SEQUENCE` -- provider-specific sequence number
+
+  Cursors are serializable via `checkpoint()` for persistence.
+  Cursors are comparable: `isBefore()`, `isAfter()`, `isSame()`.
+
+  ## Producer API
+
+  `MessiProducer` publishes messages to a topic:
+  ```java
+  MessiTopic topic = client.topicOf("my-events");
+  MessiProducer producer = topic.producer();
+  producer.publish(message1, message2);           // sync
+  producer.publishAsync(message1, message2).join(); // async
+  ```
+  Messages are assigned a ULID if missing (`MessiULIDUtils`).
+
+  ## Provider Implementations
+
+  ### Kinesis Provider (`MessiKinesisProvider`)
+  - **Backend:** AWS Kinesis Data Streams
+  - **Consumer model:** Streaming (ordered shard consumption)
+  - **Key class:** `KinesisMessiClient`
+  - **Config:** AWS credentials, region, stream name
+  - **Use when:** Need cloud-scale ordered streaming with replay
+  - **Version:** 0.8.8-SNAPSHOT
+
+  ### S3 Provider (`MessiS3Provider`)
+  - **Backend:** AWS S3 object storage
+  - **Consumer model:** Streaming (batch read from S3 objects)
+  - **Key class:** `S3MessiClient`
+  - **Config:** S3 bucket name, key prefix, AWS credentials
+  - **Use when:** Cost-effective archival, batch replay of large event volumes
+  - **Version:** 0.2-SNAPSHOT (early)
+
+  ### SQS Provider (`MessiSQSProvider`)
+  - **Backend:** AWS SQS queues
+  - **Consumer model:** Queuing (visibility-timeout based)
+  - **Key class:** `SQSMessiClient`
+  - **Config:** SQS queue URL, AWS credentials, visibility timeout
+  - **Use when:** Point-to-point messaging, work distribution, fan-out
+  - **Version:** 0.8.33-SNAPSHOT (most active)
+
+  ### In-Memory Provider (built into SDK)
+  - **Key class:** `DiscardingMessiClient` (no persistence, for testing)
+  - **Use when:** Unit tests, development
+
+  ## Provider Selection Guide
+
+  | Need | Provider | Why |
+  |------|----------|-----|
+  | Ordered replay | Kinesis | Shard-level ordering, replay from any position |
+  | Cheap archival | S3 | Batch writes, lowest storage cost |
+  | Work queue | SQS | Visibility timeout, automatic retry |
+  | Testing | In-memory | No AWS dependencies |
+
+  ## How To: Common Tasks
+
+  ### Create a Messi client
+  ```java
+  // Provider is loaded via ServiceLoader (MessiClientFactory SPI)
+  // The provider on classpath determines the backend
+  MessiClient client = ProviderConfigurator.configure(
+      Map.of("provider", "kinesis", "topic-prefix", "my-app-"),
+      "messi", MessiClientFactory.class);
+  ```
+
+  ### Produce events
+  ```java
+  MessiTopic topic = client.topicOf("orders");
+  try (MessiProducer producer = topic.producer()) {
+      MessiMessage msg = MessiMessage.newBuilder()
+          .setPartitionKey("order-123")
+          .putData("payload", ByteString.copyFromUtf8(jsonPayload))
+          .build();
+      producer.publish(msg);
+  }
+  ```
+
+  ### Consume with streaming
+  ```java
+  MessiTopic topic = client.topicOf("orders");
+  MessiShard shard = topic.shardOf(topic.firstShard());
+  MessiCursor cursor = shard.cursorAtTrimHorizon();
+  try (MessiStreamingConsumer consumer = shard.streamingConsumer(cursor)) {
+      MessiMessage msg = consumer.receive(10, TimeUnit.SECONDS);
+      if (msg != null) {
+          // process message
+          String checkpoint = consumer.currentPosition().checkpoint();
+          // persist checkpoint for recovery
+      }
+  }
+  ```
+
+  ### Consume with queuing
+  ```java
+  MessiShard shard = topic.shardOf(topic.firstShard());
+  try (MessiQueuingConsumer consumer = shard.queuingConsumer()) {
+      MessiQueuingMessageHandle handle = consumer.receive(10, TimeUnit.SECONDS);
+      if (handle != null) {
+          // process handle.message()
+          handle.ack(); // must ack or message is re-delivered
+      }
+  }
+  ```
+
+  ## Testing
+
+  SDK includes Technology Compatibility Kits (TCKs):
+  - `MessiClientTck` -- core client operations
+  - `MessiStreamingConsumerTck` -- streaming consumer semantics
+  - `MessiQueuingConsumerTck` -- queuing consumer semantics
+
+  Provider implementations run these TCKs to verify conformance.
+
+  ## Gotchas & Pitfalls
+
+  1. **Deprecated API surface:** The old `MessiClient.consumer()`, `producer()`, `shards()`,
+     `lastMessage()`, `metadata()` methods are all `@Deprecated`. Use `topicOf(name)` as the
+     entry point and navigate from there.
+
+  2. **Shard awareness:** Kinesis is shard-aware (multiple shards per topic). S3 and SQS may
+     only support a single shard. Always use `topic.firstShard()` for single-shard use cases.
+
+  3. **Protobuf messages:** `MessiMessage` is a Protocol Buffers type, not a POJO. Use the
+     builder pattern: `MessiMessage.newBuilder().setPartitionKey(...).putData(...)`.
+
+  4. **Queuing ack timeout:** In the SQS provider, messages must be acked within the visibility
+     timeout or they are re-delivered. Design consumers to process quickly or extend visibility.
+
+  5. **Cursor serialization:** Cursors are provider-specific. A checkpoint from the Kinesis
+     provider cannot be used with the SQS provider. Always store the provider type alongside
+     checkpoints.
+
+  6. **ServiceLoader discovery:** The provider is selected at runtime via `MessiClientFactory`
+     SPI. Ensure exactly one provider JAR is on the classpath, or specify the provider explicitly.
+
+  ## Related Skills
+
+  - `cantara-overview.yaml` -- Cantara company context
+  - `cantara-stingray.yaml` -- Stingray framework (used by services that produce/consume Messi events)
+  - `xorcery-alchemy-development.yaml` -- Alchemy uses similar event streaming patterns
+
+  ## Repository Paths
+
+  - SDK: `/src/cantara/MessiSDK/`
+  - Kinesis: `/src/cantara/MessiKinesisProvider/`
+  - S3: `/src/cantara/MessiS3Provider/`
+  - SQS: `/src/cantara/MessiSQSProvider/`

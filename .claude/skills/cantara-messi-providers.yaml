@@ -1,0 +1,120 @@
+name: cantara-messi-providers
+description: Messi AWS provider implementations — Kinesis, S3, and SQS backends for the MessiSDK
+version: "1.0.0"
+content: |
+  # Cantara Messi Providers
+
+  Three AWS provider implementations for the MessiSDK streaming platform.
+  All implement `MessiClientFactory` via Java ServiceLoader — the alias string
+  in config selects which provider is loaded at runtime.
+
+  See also: cantara-messi (for the SDK interface and cursor types)
+
+  ## Provider Overview
+
+  | Provider | Repo | Alias | Transport model |
+  |----------|------|-------|----------------|
+  | MessiKinesisProvider | /src/cantara/MessiKinesisProvider | `"kinesis"` | AWS Kinesis shards, ordered per-shard |
+  | MessiSQSProvider | /src/cantara/MessiSQSProvider | `"sqs"` | AWS SQS queues, at-least-once delivery |
+  | MessiS3Provider | /src/cantara/MessiS3Provider | `"s3"` | Avro files batched to S3, archival/replay |
+
+  ## ServiceLoader registration
+  Each provider JAR contains `META-INF/services/no.cantara.messi.api.MessiClientFactory`
+  pointing to its factory class. Add the provider JAR to classpath — no code change needed.
+
+  ---
+
+  ## Kinesis Provider
+
+  ### Use case
+  High-throughput ordered event streams. Best when ordering within a partition matters
+  and throughput exceeds SQS limits. Multiple shards = parallel consumers.
+
+  ### Config properties
+  ```properties
+  messi.client=kinesis
+  kinesis.region=eu-west-1
+  kinesis.credentials.keyid=AKIAIOSFODNN7EXAMPLE
+  kinesis.credentials.secret=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  kinesis.stream.name=my-stream
+  kinesis.stream.shardcount=4
+  kinesis.checkpoints.folder=/var/messi/checkpoints
+  kinesis.poll-interval=1000
+  ```
+
+  ### Notes
+  - `checkpoints.folder` stores shard sequence number checkpoints for resume-after-restart
+  - `poll-interval` in milliseconds — lower = lower latency, higher AWS API cost
+  - Simulator: `KinesisMessiClientFactory` has a local simulator mode for testing
+
+  ---
+
+  ## SQS Provider
+
+  ### Use case
+  Point-to-point work queues and fan-out via SNS+SQS. Use when you need
+  simple queue semantics, dead-letter queues, or visibility timeout control.
+  No ordering guarantees across messages (FIFO queues require separate config).
+
+  ### Config properties
+  ```properties
+  messi.client=sqs
+  sqs.region=eu-west-1
+  sqs.credentials.keyid=AKIAIOSFODNN7EXAMPLE
+  sqs.credentials.secret=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  sqs.queue.prefix=myapp-
+  sqs.queue.autocreate=true
+  ```
+
+  ### Notes
+  - `queue.prefix` is prepended to topic names — keeps queues namespaced per environment
+  - `queue.autocreate=true` creates missing queues on first use (handy in dev; disable in prod)
+  - Simulator: `SQSMessiClientFactory` includes a local in-memory simulator
+
+  ---
+
+  ## S3 Provider
+
+  ### Use case
+  Archival, replay, and batch processing. Events are buffered locally and flushed
+  as Avro-encoded files to S3. Best for: audit logs, ETL feeds, long-term storage,
+  replay of historical events. NOT suited for low-latency real-time consumers.
+
+  ### Config properties
+  ```properties
+  messi.client=s3
+  s3.region=eu-west-1
+  s3.credential-provider=static
+  s3.access-key-id=AKIAIOSFODNN7EXAMPLE
+  s3.secret-access-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  s3.bucket-name=my-messi-bucket
+  local-temp-folder=/var/messi/tmp
+  avro-file.max.seconds=300
+  avro-file.max.bytes=67108864
+  avro-file.sync.interval=1000
+  s3.listing.min-interval-seconds=60
+  ```
+
+  ### Notes
+  - `s3.credential-provider`: `static` (explicit keys) or `default` (AWS DefaultCredentialProvider chain)
+  - `avro-file.max.seconds` / `avro-file.max.bytes` — flush triggers: whichever is hit first
+  - `avro-file.sync.interval` — Avro sync marker interval in bytes
+  - `s3.listing.min-interval-seconds` — throttle S3 LIST calls for consumers reading the bucket
+  - Avro schema is defined per topic; files are named with timestamp + UUID for sort order
+  - Simulator: S3 provider includes a local filesystem simulator (`LocalS3MessiClientFactory`)
+
+  ---
+
+  ## Provider selection guide
+
+  | Scenario | Use |
+  |----------|-----|
+  | Real-time ordered event stream, multiple consumers | Kinesis |
+  | Work queue, task distribution, retry/DLQ needed | SQS |
+  | Audit log, ETL, historical replay, cost-efficient archival | S3 |
+  | Local development without AWS | Any provider's simulator class |
+  | Mixed: real-time + archival | Kinesis for real-time + S3 consumer writing to bucket |
+
+  ## Cross-references
+  - cantara-messi — MessiSDK interface, cursor types, producer/consumer API
+  - cantara-configservice — Config Service can manage provider config properties
