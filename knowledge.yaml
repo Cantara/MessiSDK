@@ -1,3 +1,17 @@
+kcp_version: "0.21"
+updated: "2026-06-20"
+language: en
+license: "Apache-2.0"
+indexing: private
+temporal:
+  valid_from: "2026-03-14"
+signing:
+  scheme: ed25519
+  scope: this-manifest
+  public_key: "MCowBQYDK2VwAyEAuipgusnqU9vjf3p2yPVLD/DmERT6tBbLOqEETdxAhMU="
+  signature: "https://raw.githubusercontent.com/Cantara/MessiSDK/main/knowledge.yaml.sig"
+not_for: []
+
 id: messi-sdk
 name: Messi SDK
 version: 0.8.12-SNAPSHOT
@@ -11,15 +25,27 @@ units:
     type: sdk
     description: MessiClient, MessiProducer, and MessiConsumer provider-agnostic interfaces.
     path: src/main/java/no/cantara/messi
+      content_hash:
+        algorithm: sha256
+        value: ""
   - id: model
     name: Model
     type: component
     description: MessiMessage and message metadata types shared across all providers.
+      content_hash:
+        algorithm: sha256
+        value: ""
   - id: spi
     name: SPI
     type: component
     description: Service Provider Interface for backend implementations to implement.
+      content_hash:
+        algorithm: sha256
+        value: ""
   - id: util
     name: Utilities
     type: component
     description: Stream utilities and helper classes for common event-stream operations.
+      content_hash:
+        algorithm: sha256
+        value: ""
